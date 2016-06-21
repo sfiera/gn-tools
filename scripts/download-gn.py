@@ -22,6 +22,7 @@ def main():
         }[host]
     except KeyError:
         print("no gn available for %s on %s" % host)
+        sys.exit(1)
 
     repo = "https://chromium.googlesource.com/chromium/buildtools/+/master"
     digest = download("%s/%s/gn.sha1?format=TEXT" %
