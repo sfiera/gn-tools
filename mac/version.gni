@@ -1,0 +1,9 @@
+# Copyright 2016 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+declare_args() {
+  # The version of Mac OS X to target. Binaries built for Mac OS X will run on this version of OS X
+  # or later. The default is to build for the host version or later.
+  macosx_version_min = ""
+}

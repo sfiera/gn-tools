@@ -3,10 +3,16 @@
 # found in the LICENSE file.
 
 import("../gcc.gni")
+import("version.gni")
+
+version_flag = ""
+if (macosx_version_min != "") {
+  version_flag = " -mmacosx-version-min=$macosx_version_min"
+}
 
 gcc_toolchain("mac") {
-  cc = "clang"
-  cxx = "clang++"
+  cc = "clang" + version_flag
+  cxx = "clang++" + version_flag
   objc = cc
   objcxx = cxx
   ld = cxx
