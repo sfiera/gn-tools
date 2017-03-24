@@ -3,16 +3,12 @@
 # found in the LICENSE file.
 
 config("c++11") {
-  cflags_cc = [
-    "-std=c++11",
-  ]
+  cflags_cc = [ "-std=c++11" ]
   ldflags = cflags_cc
 }
 
 config("libc++") {
-  cflags_cc = [
-    "-stdlib=libc++",
-  ]
+  cflags_cc = [ "-stdlib=libc++" ]
   ldflags = cflags_cc
 }
 
@@ -27,4 +23,28 @@ config("opt") {
 
 config("dbg") {
   cflags = [ "-g" ]
+}
+
+config("sanitize_memory") {
+  cflags = [
+    "-fsanitize=memory",
+    "-fsanitize-memory-track-origins",
+  ]
+  ldflags = cflags
+}
+
+config("sanitize_address") {
+  cflags = [
+    "-fsanitize=address",
+    "-fno-omit-frame-pointer",
+  ]
+  ldflags = cflags
+}
+
+config("sanitize_undefined") {
+  cflags = [
+    "-fsanitize=undefined",
+    "-fno-sanitize-recover=undefined",
+  ]
+  ldflags = cflags
 }
