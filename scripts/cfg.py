@@ -6,6 +6,7 @@
 
 from __future__ import division, print_function, unicode_literals
 import contextlib
+import json
 import os
 import platform
 import subprocess
@@ -99,7 +100,7 @@ def gn(**kwds):
     mode = kwds["mode"]
     out = os.path.join("out", target_os, mode)
 
-    gn_args = " ".join('%s = "%s"' % kv for kv in kwds.items())
+    gn_args = " ".join('%s = %s' % (k, json.dumps(v)) for k, v in kwds.items())
     cmd = ["build/lib/scripts/gn", "gen", "-q", out, "--args=%s" % gn_args]
     with step("generating build.ninja") as msg:
         try:
