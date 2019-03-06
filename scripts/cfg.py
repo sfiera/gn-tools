@@ -105,7 +105,10 @@ def gn(**kwds):
     out = os.path.join("out", target_os, mode)
 
     gn_args = " ".join('%s = %s' % (k, json.dumps(v)) for k, v in kwds.items())
-    cmd = ["build/lib/bin/gn", "gen", "-q", out, "--args=%s" % gn_args]
+    cmd = [
+        "build/lib/bin/gn", "gen", "--export-compile-commands", "-q", out,
+        "--args=%s" % gn_args
+    ]
     with step("generating build.ninja") as msg:
         try:
             os.makedirs("out")
