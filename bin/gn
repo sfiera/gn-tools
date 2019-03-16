@@ -11,5 +11,5 @@ case $(uname -sm) in
     Darwin\ *) "Unsupported mac arch `uname -m`" ;;
     Linux\ x86_64) exec $DIR/linux64/gn "$@" ;;
     Linux\ *) "Unsupported linux arch `uname -m`" ;;
-    *) echo 2> "Unsupported OS `uname -s`" ;;
+    *) echo >&2 "Unsupported OS `uname -s`" ;;
 esac
