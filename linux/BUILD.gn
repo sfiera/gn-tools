@@ -19,3 +19,10 @@ gcc_toolchain("cross_mac") {
   ld = cxx
   ar = "x86_64-apple-darwin15-ar"
 }
+
+gcc_toolchain("cross_win") {
+  cc = "clang -target x86_64-w64-mingw32 -static -D__CRT__NO_INLINE -nostdinc -Qunused-arguments -isystem /usr/lib/clang/7.0.0/include -isystem /usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/include/c++ -isystem /usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/include/c++/x86_64-w64-mingw32 -isystem /usr/x86_64-w64-mingw32/include"
+  cxx = "clang++ -target x86_64-w64-mingw32 -static -D__CRT__NO_INLINE -nostdinc -nostdinc++ -Qunused-arguments -isystem /usr/lib/clang/7.0.0/include -isystem /usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/include/c++ -isystem /usr/lib/gcc/x86_64-w64-mingw32/7.3-win32/include/c++/x86_64-w64-mingw32 -isystem /usr/x86_64-w64-mingw32/include"
+  ld = cxx
+  ar = "x86_64-w64-mingw32-ar"
+}
