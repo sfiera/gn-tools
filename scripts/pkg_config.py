@@ -10,20 +10,28 @@ import subprocess
 import sys
 
 FLAGS = {
-    "include_dirs":  "--cflags-only-I",
-    "cflags":        "--cflags-only-other",
-    "lib_dirs":      "--libs-only-L",
-    "libs":          "--libs-only-l",
-    "ldflags":       "--libs-only-other",
+    "include_dirs": ("--cflags-only-I", "-I"),
+    "cflags": ("--cflags-only-other", ""),
+    "lib_dirs": ("--libs-only-L", "-L"),
+    "libs": ("--libs-only-l", "-l"),
+    "ldflags": ("--libs-only-other", ""),
 }
+
 
 def main():
     progname, library = sys.argv
 
-    for gn_name, flag in FLAGS.iteritems():
+    for gn_name, (flag, prefix) in FLAGS.iteritems():
         values = subprocess.check_output(["pkg-config", flag, "--", library])
-        values = shlex.split(values)
+        values = [strip_prefix(prefix, x) for x in shlex.split(values)]
         print("%s = %s" % (gn_name, json.dumps(values)))
+
+
+def strip_prefix(prefix, s):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
+
 
 if __name__ == "__main__":
     main()
