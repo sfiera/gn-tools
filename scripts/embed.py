@@ -1,10 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import sys
+
 
 def main():
     progname, origin, header, source, symbol = sys.argv
@@ -37,6 +38,7 @@ def main():
         f.write("\n")
         for namespace in symbol[-2::-1]:
             f.write("}  // namespace %s\n" % namespace)
+
 
 if __name__ == "__main__":
     main()

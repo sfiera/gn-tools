@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -67,8 +67,10 @@ def check_bin(cmdline, what=None, input=None):
             if not isinstance(input, bytes):
                 input = input.encode("utf-8")
         try:
-            p = subprocess.Popen(
-                cmdline, stdin=stdin, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            p = subprocess.Popen(cmdline,
+                                 stdin=stdin,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT)
             p.communicate(input)
             if p.returncode == 0:
                 return True

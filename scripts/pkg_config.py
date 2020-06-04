@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
@@ -21,8 +21,9 @@ FLAGS = {
 def main():
     progname, library = sys.argv
 
-    for gn_name, (flag, prefix) in FLAGS.iteritems():
+    for gn_name, (flag, prefix) in FLAGS.items():
         values = subprocess.check_output(["pkg-config", flag, "--", library])
+        values = values.decode("utf-8")
         values = [strip_prefix(prefix, x) for x in shlex.split(values)]
         print("%s = %s" % (gn_name, json.dumps(values)))
 
