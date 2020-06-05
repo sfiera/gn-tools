@@ -33,11 +33,22 @@ def main():
         f.write("\n")
         f.write("extern const char %s[] =\n" % symbol[-1])
         for line in data:
-            f.write("    \"%s\"\n" % line.encode("string_escape"))
+            f.write("    \"%s\"\n" % escape(line))
         f.write(";\n")
         f.write("\n")
         for namespace in symbol[-2::-1]:
             f.write("}  // namespace %s\n" % namespace)
+
+
+def escape(s):
+    if len(s) != 1:
+        return "".join(escape(ch) for ch in s)
+
+    if s in "\t\n\r":
+        return {"\t": r"\t", "\n": r"\n", "\r": r"\r"}[s]
+    elif " " <= s <= "~":
+        return s
+    return r"\%03o" % ord(s)
 
 
 if __name__ == "__main__":
