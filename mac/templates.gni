@@ -20,27 +20,15 @@ template("app") {
   }
 
   bundle_data("${id}_bundle_executable") {
-    public_deps = [
-      ":${id}_executable",
-    ]
-    sources = [
-      "$target_gen_dir/${id}_executable",
-    ]
-    outputs = [
-      "{{bundle_executable_dir}}/$output_name",
-    ]
+    public_deps = [ ":${id}_executable" ]
+    sources = [ "$target_gen_dir/${id}_executable" ]
+    outputs = [ "{{bundle_executable_dir}}/$output_name" ]
   }
 
   bundle_data("${id}_bundle_info_plist") {
-    public_deps = [
-      ":${id}_info_plist",
-    ]
-    sources = [
-      "$target_gen_dir/${id}-Info.plist",
-    ]
-    outputs = [
-      "{{bundle_root_dir}}/Info.plist",
-    ]
+    public_deps = [ ":${id}_info_plist" ]
+    sources = [ "$target_gen_dir/${id}-Info.plist" ]
+    outputs = [ "{{bundle_root_dir}}/Info.plist" ]
   }
 
   executable("${id}_executable") {
@@ -54,12 +42,8 @@ template("app") {
 
   action("${id}_info_plist") {
     script = "//build/lib/scripts/copy_info_plist.py"
-    sources = [
-      invoker.info_plist,
-    ]
-    outputs = [
-      "$target_gen_dir/${id}-Info.plist",
-    ]
+    sources = [ invoker.info_plist ]
+    outputs = [ "$target_gen_dir/${id}-Info.plist" ]
     args = rebase_path(sources, root_build_dir) +
            rebase_path(outputs, root_build_dir)
     if (defined(invoker.info_plist_defines)) {
@@ -71,8 +55,6 @@ template("app") {
 template("app_resources") {
   bundle_data(target_name) {
     sources = invoker.sources
-    outputs = [
-      "{{bundle_resources_dir}}/{{source_file_part}}",
-    ]
+    outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
   }
 }

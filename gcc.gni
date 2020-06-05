@@ -11,9 +11,8 @@ template("gcc_toolchain") {
       depfile = "{{output}}.d"
       command = "$cc -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} -c {{source}} -o {{output}}"
       depsformat = "gcc"
-      outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o",
-      ]
+      outputs =
+          [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o" ]
     }
 
     cxx = invoker.cxx
@@ -23,9 +22,8 @@ template("gcc_toolchain") {
       depfile = "{{output}}.d"
       command = "$cxx -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} -c {{source}} -o {{output}}"
       depsformat = "gcc"
-      outputs = [
-        "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o",
-      ]
+      outputs =
+          [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.o" ]
     }
 
     if (defined(invoker.objc)) {
@@ -61,9 +59,8 @@ template("gcc_toolchain") {
       description = "AR {{output}}"
 
       command = "rm -f {{output}} && $ar rcs {{output}} {{inputs}}"
-      outputs = [
-        "{{target_out_dir}}/{{target_output_name}}{{output_extension}}",
-      ]
+      outputs =
+          [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
       default_output_extension = ".a"
       output_prefix = "lib"
     }
@@ -78,9 +75,7 @@ template("gcc_toolchain") {
 
       command =
           "$ld {{ldflags}} -o $outfile {{inputs}} {{solibs}} {{libs}} -lpthread"
-      outputs = [
-        outfile,
-      ]
+      outputs = [ outfile ]
     }
 
     tool("stamp") {
