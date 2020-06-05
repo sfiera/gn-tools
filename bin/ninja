@@ -7,9 +7,9 @@
 DIR=`dirname $0`
 
 case $(uname -sm) in
-    Darwin\ x86_64) exec $DIR/mac/ninja "$@" ;;
+    Darwin\ x86_64) exec $DIR/mac/amd64/ninja "$@" ;;
     Darwin\ *) "Unsupported mac arch `uname -m`" ;;
-    Linux\ x86_64) exec $DIR/linux64/ninja "$@" ;;
+    Linux\ x86_64) exec $DIR/linux/amd64/ninja "$@" ;;
     Linux\ *) "Unsupported linux arch `uname -m`" ;;
-    *) echo 2> "Unsupported OS `uname -s`" ;;
+    *) echo >&2 "Unsupported OS `uname -s`" ;;
 esac

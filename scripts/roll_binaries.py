@@ -6,57 +6,69 @@
 # found in the LICENSE file.
 
 from __future__ import absolute_import, division, print_function, unicode_literals
+import io
 import os
 import sys
-import urllib2
+import requests
+import zipfile
 
 PACKAGE = os.path.dirname(os.path.dirname(__file__))
 BINDIR = os.path.join(PACKAGE, "bin")
-EXTENSIONS = {
-    "mac": "",
-    "linux64": "",
-    "win": ".exe",
+PLATFORMS = {
+    "mac": ("mac", "amd64", ""),
+    "linux": ("linux", "amd64", ""),
+    "win": ("windows", "amd64", ".exe"),
 }
 
 
 def main():
     assert not sys.argv[1:]  # Script takes no arguments
     try:
-        for host in ["mac", "linux64", "win"]:
-            download_gn(host)
-            download_ninja(host)
-    except urllib2.HTTPError as e:
-        print("%s: %s" % (e.geturl(), e))
+        download_gn()
+        download_ninja()
+    except Exception as e:
+        print(e)
         sys.exit(1)
 
 
-def download_gn(host):
-    path = os.path.join(BINDIR, host, "gn" + EXTENSIONS[host])
-    print("updating %s…" % path)
-    repo = "https://chromium.googlesource.com/chromium/buildtools/+/master"
-    digest = get("%s/%s/gn%s.sha1?format=TEXT" % (repo, host, EXTENSIONS[host])).decode("base64")
-    data = get("https://storage.googleapis.com/chromium-gn/%s" % digest)
-    with open(path, "w") as f:
-        f.write(data)
-    os.chmod(path, 0o755)
+def download_gn():
+    for platform, (sys, arch, ext) in PLATFORMS.items():
+        path = os.path.join(BINDIR, platform, arch, "gn" + ext)
+        print("updating %s…" % path)
+        repo = "https://chrome-infra-packages.appspot.com/dl/gn/gn"
+        resp = requests.get("%s/%s-%s/+/latest" % (repo, sys, arch))
+        resp.raise_for_status()
+
+        data = io.BytesIO(resp.content)
+        z = zipfile.ZipFile(data)
+        with open(path, "wb") as f:
+            f.write(z.open("gn" + ext).read())
+        os.chmod(path, 0o755)
 
 
-def download_ninja(host):
-    path = os.path.join(BINDIR, host, "ninja" + EXTENSIONS[host])
-    print("updating %s…" % path)
-    repo = "https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master"
-    if host == "win":
-        data = get("%s/ninja.exe?format=TEXT" % (repo)).decode("base64")
-    else:
-        data = get("%s/ninja-%s?format=TEXT" % (repo, host)).decode("base64")
-    directory = os.path.join(BINDIR, host)
-    with open(path, "w") as f:
-        f.write(data)
-    os.chmod(path, 0o755)
+def download_ninja():
+    latest = requests.get("https://api.github.com/repos/ninja-build/ninja/releases/latest")
+    latest.raise_for_status()
 
+    for asset in latest.json()["assets"]:
+        name = asset["name"]
+        if not (name.startswith("ninja-") and name.endswith(".zip")):
+            continue
+        platform = name[6:-4]
+        if platform not in PLATFORMS:
+            continue
+        _, arch, ext = PLATFORMS[platform]
 
-def get(url):
-    return urllib2.urlopen(url).read()
+        path = os.path.join(BINDIR, platform, arch, "ninja" + ext)
+        print("updating %s…" % path)
+        resp = requests.get(asset["browser_download_url"])
+        resp.raise_for_status()
+
+        data = io.BytesIO(resp.content)
+        z = zipfile.ZipFile(data)
+        with open(path, "wb") as f:
+            f.write(z.open("ninja" + ext).read())
+        os.chmod(path, 0o755)
 
 
 if __name__ == "__main__":
