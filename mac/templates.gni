@@ -14,6 +14,7 @@ template("app") {
     ]
 
     bundle_root_dir = "$root_build_dir/$output_name.app/Contents"
+    bundle_contents_dir = bundle_root_dir
     bundle_resources_dir = bundle_root_dir + "/Resources"
     bundle_executable_dir = bundle_root_dir + "/MacOS"
   }
