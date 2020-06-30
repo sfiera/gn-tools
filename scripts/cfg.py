@@ -93,6 +93,57 @@ def check_pkg(lib):
         return False
 
 
+def check_brew():
+    """Check that brew --version succeeds"""
+    return check_bin("brew --version".split(), what="brew")
+
+
+def check_gn():
+    """Check that gn --version succeeds"""
+    return check_bin("gn --version".split(), what="gn")
+
+
+def check_ninja():
+    """Check that ninja --version succeeds"""
+    return check_bin("ninja --version".split(), what="ninja")
+
+
+def check_clang(executable=""):
+    """Compile a basic C++11 binary."""
+    executable = executable or "clang++"
+    return check_bin(("%s -x c++ -std=c++11 - -o /dev/null" % executable).split(),
+                     what="clang",
+                     input="int main() { return 1; }")
+
+
+def check_libcxx(executable=""):
+    """Compile a basic C++11, libc++ binary."""
+    executable = executable or "clang++"
+    return check_bin(
+        ("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+        what="libc++",
+        input="#include <chrono>\n\nint main() { return std::chrono::seconds(1).count(); }")
+
+
+def check_libcxxabi(executable=""):
+    """Compile a basic C++11, libc++ binary, including cxxabi.h.
+
+    Pass -I/usr/include/libcxxabi explicitly to work around a broken
+    environment on Ubuntu.
+    """
+    executable = executable or "clang++"
+    return check_bin(
+        ("%s -x c++ -std=c++11 -stdlib=libc++ -I/usr/include/libcxxabi - -o /dev/null" %
+         executable).split(),
+        what="libc++abi",
+        input="#include <cxxabi.h>\n\nint main() { return 0; }")
+
+
+def check_pkg_config():
+    """Run pkg-config --version."""
+    return check_bin("pkg-config --version".split())
+
+
 def makedirs(path):
     try:
         os.makedirs(path)
@@ -107,10 +158,7 @@ def gn(**kwds):
     out = os.path.join("out", target_os, mode)
 
     gn_args = " ".join('%s = %s' % (k, json.dumps(v)) for k, v in kwds.items())
-    cmd = [
-        "build/lib/bin/gn", "gen", "--export-compile-commands", "-q", out,
-        "--args=%s" % gn_args
-    ]
+    cmd = ["gn", "gen", "--export-compile-commands", "-q", out, "--args=%s" % gn_args]
     with step("generating build.ninja") as msg:
         try:
             os.makedirs("out")
