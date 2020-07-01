@@ -4,11 +4,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from __future__ import division, print_function, unicode_literals
 import contextlib
 import json
 import os
 import platform
+import shlex
 import subprocess
 import sys
 
@@ -55,6 +55,37 @@ def step(message):
     yield msg
     if not msg.called:
         print(padding + tint("ok", "green"))
+
+
+_KNOWN_PROTOS = frozenset("debian fedora arch alpine suse gentoo slackware".split())
+
+
+def dist_proto():
+    """Returns a pair (pretty name, prototype) based on os-release.
+
+    For example, if the distribution is “Debian-like” (such as Ubuntu or
+    Raspbian), then the returned prototype would be “debian”.
+    """
+    values = {}
+    try:
+        with open("/etc/os-release") as f:
+            return _load_dist_proto(f)
+    except (OSError, IOError):
+        return ("Unknown", "unknown")
+
+
+def _load_dist_proto(lines):
+    values = {}
+    for line in lines:
+        k, v = line.split("=", 1)
+        v, = shlex.split(v)
+        values[k] = v
+    pretty = values.get("PRETTY_NAME", "Unknown")
+    ids = set([values["ID"]]).union(values.get("ID_LIKE", "").split())
+    matches = ids & _KNOWN_PROTOS
+    if matches:
+        return pretty, matches.pop()
+    return pretty, "unknown"
 
 
 def check_bin(cmdline, what=None, input=None):
