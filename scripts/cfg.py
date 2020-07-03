@@ -12,6 +12,11 @@ import platform
 import subprocess
 import sys
 
+BUILDLIB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BIN = os.path.join(BUILDLIB, "bin")
+BIN_NINJA = os.path.join(BIN, "ninja")
+BIN_GN = os.path.join(BIN, "gn")
+
 
 def host_os():
     if sys.platform == "darwin":
@@ -93,19 +98,14 @@ def check_pkg(lib):
         return False
 
 
-def check_brew():
-    """Check that brew --version succeeds"""
-    return check_bin("brew --version".split(), what="brew")
-
-
 def check_gn():
     """Check that gn --version succeeds"""
-    return check_bin("gn --version".split(), what="gn")
+    return check_bin([BIN_GN, "--version"], what="gn")
 
 
 def check_ninja():
     """Check that ninja --version succeeds"""
-    return check_bin("ninja --version".split(), what="ninja")
+    return check_bin([BIN_NINJA, "--version"], what="ninja")
 
 
 def check_clang(executable=""):
