@@ -207,3 +207,25 @@ def gn(**kwds):
         if retcode != 0:
             msg("failed", color="red")
             sys.exit(retcode)
+
+
+def configure(out, **kwds):
+    config = os.path.join(out, "config.mk")
+    cur = os.path.join("out", "cur")
+    with step("generating config.mk") as msg:
+        try:
+            os.makedirs(out)
+        except FileExistsError:
+            pass
+
+        try:
+            os.unlink(cur)
+        except FileNotFoundError:
+            pass
+        os.symlink(src=os.path.relpath(out, start="out"), dst=cur)
+
+        with open(config, "w") as f:
+            for k, v in kwds.items():
+                if isinstance(v, list):
+                    v = " ".join(v)
+                f.write("%s := %s\n" % (k.upper(), v))
