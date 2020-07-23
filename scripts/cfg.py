@@ -4,6 +4,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import contextlib
 import json
 import os
@@ -57,35 +58,42 @@ def step(message):
         print(padding + tint("ok", "green"))
 
 
+proto = collections.namedtuple("proto", "pretty prototype codename".split())
 _KNOWN_PROTOS = frozenset("debian fedora arch alpine suse gentoo slackware".split())
 
 
 def dist_proto():
-    """Returns a pair (pretty name, prototype) based on os-release.
+    """Returns a pair (pretty name, prototype, codename) based on os-release.
 
     For example, if the distribution is “Debian-like” (such as Ubuntu or
     Raspbian), then the returned prototype would be “debian”.
     """
-    values = {}
     try:
         with open("/etc/os-release") as f:
-            return _load_dist_proto(f)
-    except (OSError, IOError):
-        return ("Unknown", "unknown")
+            return _detect_dist_proto(f)
+    except FileNotFoundError:
+        return proto("Unknown", "unknown", "unknown")
 
 
-def _load_dist_proto(lines):
+def _detect_dist_proto(lines):
     values = {}
     for line in lines:
-        k, v = line.split("=", 1)
-        v, = shlex.split(v)
-        values[k] = v
+        line = line.strip()
+        if line:
+            k, v = line.split("=", 1)
+            values[k], = shlex.split(v)
+
     pretty = values.get("PRETTY_NAME", "Unknown")
-    ids = set([values["ID"]]).union(values.get("ID_LIKE", "").split())
-    matches = ids & _KNOWN_PROTOS
-    if matches:
-        return pretty, matches.pop()
-    return pretty, "unknown"
+    codename = values.get("VERSION_CODENAME", "unknown")
+
+    if values.get("ID") in _KNOWN_PROTOS:
+        return proto(pretty, values["ID"], codename)
+
+    like = set(values.get("ID_LIKE", "").split()) & _KNOWN_PROTOS
+    if like:
+        return proto(pretty, like.pop(), codename)
+
+    return proto(pretty, "unknown", codename)
 
 
 def check_bin(cmdline, what=None, input=None):
