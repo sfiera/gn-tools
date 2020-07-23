@@ -157,17 +157,11 @@ def check_libcxx(executable=""):
 
 
 def check_libcxxabi(executable=""):
-    """Compile a basic C++11, libc++ binary, including cxxabi.h.
-
-    Pass -I/usr/include/libcxxabi explicitly to work around a broken
-    environment on Ubuntu.
-    """
+    """Compile a basic C++11, libc++ binary, including cxxabi.h."""
     executable = executable or "clang++"
-    return check_bin(
-        ("%s -x c++ -std=c++11 -stdlib=libc++ -I/usr/include/libcxxabi - -o /dev/null" %
-         executable).split(),
-        what="libc++abi",
-        input="#include <cxxabi.h>\n\nint main() { return 0; }")
+    return check_bin(("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+                     what="libc++abi",
+                     input="#include <cxxabi.h>\n\nint main() { return 0; }")
 
 
 def check_pkg_config():
