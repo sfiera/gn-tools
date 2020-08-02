@@ -96,9 +96,7 @@ def _detect_dist_proto(lines):
     return proto(pretty, "unknown", codename)
 
 
-def check_bin(cmdline, what=None, input=None):
-    if what is None:
-        what = cmdline[0]
+def check_bin(executable, args, *, what, input=None):
     with step("checking for %s" % what) as msg:
         stdin = None
         if input is not None:
@@ -106,23 +104,23 @@ def check_bin(cmdline, what=None, input=None):
             if not isinstance(input, bytes):
                 input = input.encode("utf-8")
         try:
-            p = subprocess.Popen(cmdline,
+            p = subprocess.Popen(executable + args,
                                  stdin=stdin,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             p.communicate(input)
             if p.returncode == 0:
-                return True
+                return executable
         except OSError:
             pass
         msg("missing", color="red")
-        return False
+        return None
 
 
-def check_pkg(lib):
+def check_pkg(executable, lib):
     with step("checking for %s" % lib) as msg:
         try:
-            p = subprocess.Popen(["pkg-config", lib])
+            p = subprocess.Popen(executable + [lib])
             p.communicate()
             if p.returncode == 0:
                 return True
@@ -132,49 +130,56 @@ def check_pkg(lib):
         return False
 
 
-def check_brew():
+def check_brew(default="brew"):
     """Check that brew --version succeeds"""
-    return check_bin("brew --version".split(), what="brew")
+    executable = shlex.split(os.getenv("BREW", default))
+    return check_bin(executable, ["--version"], what="brew")
 
 
-def check_gn():
+def check_gn(default="gn"):
     """Check that gn --version succeeds"""
-    return check_bin("gn --version".split(), what="gn")
+    executable = shlex.split(os.getenv("GN", default))
+    return check_bin(executable, ["--version"], what="gn")
 
 
-def check_ninja():
+def check_ninja(default="ninja"):
     """Check that ninja --version succeeds"""
-    return check_bin("ninja --version".split(), what="ninja")
+    executable = shlex.split(os.getenv("NINJA", default))
+    return check_bin(executable, ["--version"], what="ninja")
 
 
-def check_clang(executable=""):
+def check_clang(default="clang++"):
     """Compile a basic C++11 binary."""
-    executable = executable or "clang++"
-    return check_bin(("%s -x c++ -std=c++11 - -o /dev/null" % executable).split(),
+    executable = shlex.split(os.getenv("CXX", default))
+    return check_bin(executable,
+                     "-x c++ -std=c++11 - -o /dev/null".split(),
                      what="clang",
                      input="int main() { return 1; }")
 
 
-def check_libcxx(executable=""):
+def check_libcxx(default="clang++"):
     """Compile a basic C++11, libc++ binary."""
-    executable = executable or "clang++"
+    executable = shlex.split(os.getenv("CXX", default))
     return check_bin(
-        ("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+        executable,
+        "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
         what="libc++",
         input="#include <chrono>\n\nint main() { return std::chrono::seconds(1).count(); }")
 
 
-def check_libcxxabi(executable=""):
+def check_libcxxabi(default="clang++"):
     """Compile a basic C++11, libc++ binary, including cxxabi.h."""
-    executable = executable or "clang++"
-    return check_bin(("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+    executable = shlex.split(os.getenv("CXX", default))
+    return check_bin(executable,
+                     "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
                      what="libc++abi",
                      input="#include <cxxabi.h>\n\nint main() { return 0; }")
 
 
-def check_pkg_config():
+def check_pkg_config(default="pkg-config"):
     """Run pkg-config --version."""
-    return check_bin("pkg-config --version".split())
+    executable = shlex.split(os.getenv("PKG_CONFIG", default))
+    return check_bin(executable, ["--version"], what="pkg-config")
 
 
 def makedirs(path):
