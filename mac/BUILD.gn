@@ -11,10 +11,6 @@ declare_args() {
 }
 
 suffix = ""
-if (llvm_prefix != "") {
-  suffix += " -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
-}
-
 if (macosx_version_min != "") {
   suffix += " -mmacosx-version-min=$macosx_version_min"
 }
