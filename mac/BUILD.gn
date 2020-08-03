@@ -6,14 +6,12 @@ import("../gcc.gni")
 import("version.gni")
 
 declare_args() {
-  llvm_prefix = ""
+  clang = "clang"
+  clangxx = "clang++"
 }
 
-prefix = ""
 suffix = ""
-
 if (llvm_prefix != "") {
-  prefix = llvm_prefix + "/bin/"
   suffix += " -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
 }
 
@@ -22,8 +20,8 @@ if (macosx_version_min != "") {
 }
 
 gcc_toolchain("mac") {
-  cc = prefix + "clang" + suffix
-  cxx = prefix + "clang++" + suffix
+  cc = clang + suffix
+  cxx = clangxx + suffix
   objc = cc
   objcxx = cxx
   ld = cxx

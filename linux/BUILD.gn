@@ -4,9 +4,14 @@
 
 import("../gcc.gni")
 
+declare_args() {
+  clang = "clang"
+  clangxx = "clang++"
+}
+
 gcc_toolchain("linux") {
-  cc = "clang"
-  cxx = "clang++"
+  cc = clang
+  cxx = clangxx
   ld = cxx
   ar = "ar"
 }
