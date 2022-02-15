@@ -3,8 +3,21 @@
 # found in the LICENSE file.
 
 config("c++11") {
-  cflags_cc = [ "-std=c++11" ]
-  ldflags = cflags_cc
+  if (current_toolchain == "//build/lib/win:msvc") {
+    cflags_cc = [ "/std:c++11" ]
+  } else {
+    cflags_cc = [ "-std=c++11" ]
+    ldflags = cflags_cc
+  }
+}
+
+config("c++20") {
+  if (current_toolchain == "//build/lib/win:msvc") {
+    cflags_cc = [ "/std:c++20" ]
+  } else {
+    cflags_cc = [ "-std=c++20" ]
+    ldflags = cflags_cc
+  }
 }
 
 config("libc++") {
@@ -26,25 +39,31 @@ config("dbg") {
 }
 
 config("sanitize_memory") {
-  cflags = [
-    "-fsanitize=memory",
-    "-fsanitize-memory-track-origins",
-  ]
-  ldflags = cflags
+  if (current_toolchain != "//build/lib/win:msvc") {
+    cflags = [
+      "-fsanitize=memory",
+      "-fsanitize-memory-track-origins",
+    ]
+    ldflags = cflags
+  }
 }
 
 config("sanitize_address") {
-  cflags = [
-    "-fsanitize=address",
-    "-fno-omit-frame-pointer",
-  ]
-  ldflags = cflags
+  if (current_toolchain != "//build/lib/win:msvc") {
+    cflags = [
+      "-fsanitize=address",
+      "-fno-omit-frame-pointer",
+    ]
+    ldflags = cflags
+  }
 }
 
 config("sanitize_undefined") {
-  cflags = [
-    "-fsanitize=undefined",
-    "-fno-sanitize-recover=undefined",
-  ]
-  ldflags = cflags
+  if (current_toolchain != "//build/lib/win:msvc") {
+    cflags = [
+      "-fsanitize=undefined",
+      "-fno-sanitize-recover=undefined",
+    ]
+    ldflags = cflags
+  }
 }

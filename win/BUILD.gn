@@ -1,0 +1,63 @@
+toolchain("msvc") {
+  cc = "cl.exe"
+  tool("cc") {
+    description = "CC {{output}}"
+
+    command = "$cc /nologo {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /Fo\"{{output}}\" /c {{source}}"
+    depsformat = "msvc"
+    outputs =
+        [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.obj" ]
+  }
+
+  cxx = "cl.exe"
+  tool("cxx") {
+    description = "CXX {{output}}"
+
+    command = "$cxx /nologo {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} /Fo\"{{output}}\" /c {{source}}"
+    depsformat = "msvc"
+    outputs =
+        [ "{{source_out_dir}}/{{target_output_name}}.{{source_name_part}}.obj" ]
+  }
+
+  ar = "lib.exe"
+  tool("alink") {
+    description = "AR {{output}}"
+
+    command = "$ar /nologo /OUT:{{output}} {{inputs}}"
+    outputs =
+        [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
+    default_output_extension = ".lib"
+    output_prefix = "lib"
+  }
+
+  ld = "link.exe"
+  tool("link") {
+    outfile = "{{root_out_dir}}/{{target_output_name}}{{output_extension}}"
+    description = "LINK $outfile"
+
+    lib_switch = ""
+    lib_dir_switch = "-L"
+
+    command =
+        "$ld /NOLOGO /OUT:$outfile {{ldflags}} {{inputs}} {{solibs}} {{libs}}"
+    outputs = [ outfile ]
+  }
+
+  tool("stamp") {
+    command = "cmd.exe /c echo > {{output}}"
+    description = "STAMP {{output}}"
+  }
+}
+
+config("windows") {
+  ldflags = [ "/SUBSYSTEM:WINDOWS" ]
+}
+
+config("console") {
+  ldflags = [ "/SUBSYSTEM:CONSOLE" ]
+}
+
+config("cpp_exceptions") {
+  cflags_cc = [ "/EHsc" ]
+}
+
