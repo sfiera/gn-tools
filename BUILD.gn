@@ -20,6 +20,15 @@ config("c++20") {
   }
 }
 
+config("debug_symbols") {
+  if (current_toolchain == "//build/lib/win:msvc") {
+    cflags = [ "/Z7" ]
+    ldflags = [ "/DEBUG:FULL" ]
+  } else {
+    cflags = [ "-g" ]
+  }
+}
+
 config("libc++") {
   cflags_cc = [ "-stdlib=libc++" ]
   ldflags = cflags_cc
@@ -35,7 +44,7 @@ config("opt") {
 }
 
 config("dbg") {
-  cflags = [ "-g" ]
+  configs = [ ":debug_symbols" ]
 }
 
 config("sanitize_memory") {
