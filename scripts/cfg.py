@@ -199,11 +199,19 @@ def gn(**kwds):
             if e.errno != 17:
                 raise
 
-        try:
-            os.unlink("out/cur")
-        except OSError as e:
-            pass
-        os.symlink(os.path.join(target_os, mode), "out/cur")
+        cur_path = os.path.join(target_os, mode)
+
+        if host_os() == "win":
+            try:
+                os.mkdir(cur_path)
+            except OSError:
+                pass
+        else:
+            try:
+                os.unlink("out/cur")
+            except OSError as e:
+                pass
+            os.symlink(cur_path, "out/cur")
 
         retcode = subprocess.call(cmd)
         if retcode != 0:
