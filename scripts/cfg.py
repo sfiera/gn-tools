@@ -250,13 +250,14 @@ def gn(*, gn, ninja, **kwds):
             msg("failed", color="red")
             sys.exit(retcode)
 
-        with open("out/cur/ninja", "w") as f:
-            f.write(
-                textwrap.dedent("""
-                    #!/bin/sh
-                    exec %s "$@"
-                """).lstrip() % ninja)
-        os.chmod("out/cur/ninja", 0o755)
+        if host_os() != "win":
+            with open("out/cur/ninja", "w") as f:
+                f.write(
+                    textwrap.dedent("""
+                        #!/bin/sh
+                        exec %s "$@"
+                    """).lstrip() % ninja)
+            os.chmod("out/cur/ninja", 0o755)
 
 
 def _gn_dumps(obj):
