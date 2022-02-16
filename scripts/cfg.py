@@ -12,6 +12,7 @@ import platform
 import shlex
 import subprocess
 import sys
+import textwrap
 
 
 def host_os():
@@ -96,9 +97,7 @@ def _detect_dist_proto(lines):
     return proto(pretty, "unknown", codename)
 
 
-def check_bin(cmdline, what=None, input=None):
-    if what is None:
-        what = cmdline[0]
+def check_bin(executable, args, *, what, input=None):
     with step("checking for %s" % what) as msg:
         stdin = None
         if input is not None:
@@ -106,75 +105,108 @@ def check_bin(cmdline, what=None, input=None):
             if not isinstance(input, bytes):
                 input = input.encode("utf-8")
         try:
-            p = subprocess.Popen(cmdline,
+            p = subprocess.Popen(shlex.split(executable) + args,
                                  stdin=stdin,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             p.communicate(input)
             if p.returncode == 0:
-                return True
+                return executable
         except OSError:
             pass
         msg("missing", color="red")
-        return False
+        return None
 
 
-def check_pkg(lib):
+PKG_CONFIG_FLAGS = {
+    "include_dirs": ("--cflags-only-I", "-I"),
+    "cflags": ("--cflags-only-other", ""),
+    "lib_dirs": ("--libs-only-L", "-L"),
+    "libs": ("--libs-only-l", "-l"),
+    "ldflags": ("--libs-only-other", ""),
+}
+
+
+def check_pkg(executable, lib):
+    flags = {}
     with step("checking for %s" % lib) as msg:
         try:
-            p = subprocess.Popen(["pkg-config", lib])
-            p.communicate()
-            if p.returncode == 0:
-                return True
+            for gn_name, (flag, prefix) in PKG_CONFIG_FLAGS.items():
+                values = subprocess.check_output(shlex.split(executable) + [flag, "--", lib])
+                values = values.decode("utf-8")
+                values = [_strip_prefix(prefix, x) for x in shlex.split(values)]
+                flags[gn_name] = values
         except OSError:
-            pass
-        msg("missing", color="red")
-        return False
+            msg("missing", color="red")
+            return None
+    return flags
 
 
-def check_brew():
+def _strip_prefix(prefix, s):
+    if s.startswith(prefix):
+        return s[len(prefix):]
+    return s
+
+
+def check_brew(default="brew"):
     """Check that brew --version succeeds"""
-    return check_bin("brew --version".split(), what="brew")
+    executable = os.getenv("BREW", default)
+    return check_bin(executable, ["--version"], what="brew")
 
 
-def check_gn():
+def check_gn(default="gn"):
     """Check that gn --version succeeds"""
-    return check_bin("gn --version".split(), what="gn")
+    executable = os.getenv("GN", default)
+    return check_bin(executable, ["--version"], what="gn")
 
 
-def check_ninja():
+def check_ninja(default="ninja"):
     """Check that ninja --version succeeds"""
-    return check_bin("ninja --version".split(), what="ninja")
+    executable = os.getenv("NINJA", default)
+    return check_bin(executable, ["--version"], what="ninja")
 
 
-def check_clang(executable=""):
-    """Compile a basic C++11 binary."""
-    executable = executable or "clang++"
-    return check_bin(("%s -x c++ -std=c++11 - -o /dev/null" % executable).split(),
+def check_clang(default="clang"):
+    """Compile a basic C99 binary."""
+    executable = os.getenv("CC", default)
+    return check_bin(executable,
+                     "-x c -std=c99 - -o /dev/null".split(),
                      what="clang",
                      input="int main() { return 1; }")
 
 
-def check_libcxx(executable=""):
+def check_clangxx(default="clang++"):
+    """Compile a basic C++11 binary."""
+    executable = os.getenv("CXX", default)
+    return check_bin(executable,
+                     "-x c++ -std=c++11 - -o /dev/null".split(),
+                     what="clang++",
+                     input="int main() { return 1; }")
+
+
+def check_libcxx(default="clang++"):
     """Compile a basic C++11, libc++ binary."""
-    executable = executable or "clang++"
+    executable = os.getenv("CXX", default)
     return check_bin(
-        ("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+        executable,
+        "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
         what="libc++",
         input="#include <chrono>\n\nint main() { return std::chrono::seconds(1).count(); }")
 
 
-def check_libcxxabi(executable=""):
+def check_libcxxabi(default="clang++"):
     """Compile a basic C++11, libc++ binary, including cxxabi.h."""
-    executable = executable or "clang++"
-    return check_bin(("%s -x c++ -std=c++11 -stdlib=libc++ - -o /dev/null" % executable).split(),
+    executable = os.getenv("CXX", default)
+    return check_bin(executable,
+                     "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
                      what="libc++abi",
                      input="#include <cxxabi.h>\n\nint main() { return 0; }")
 
 
-def check_pkg_config():
+def check_pkg_config(default="pkg-config"):
     """Run pkg-config --version."""
-    return check_bin("pkg-config --version".split())
+    executable = os.getenv("PKG_CONFIG", default)
+    return check_bin(executable, ["--version"], what="pkg-config")
 
 
 def makedirs(path):
@@ -185,13 +217,13 @@ def makedirs(path):
             raise
 
 
-def gn(**kwds):
+def gn(*, gn, ninja, **kwds):
     target_os = kwds["target_os"]
     mode = kwds["mode"]
     out = os.path.join("out", target_os, mode)
 
-    gn_args = " ".join('%s = %s' % (k, json.dumps(v)) for k, v in kwds.items())
-    cmd = ["gn", "gen", "--export-compile-commands", "-q", out, "--args=%s" % gn_args]
+    gn_args = _gn_dumps(kwds)
+    cmd = shlex.split(gn) + ["gen", "--export-compile-commands", "-q", out, "--args=%s" % gn_args]
     with step("generating build.ninja") as msg:
         try:
             os.makedirs("out")
@@ -217,3 +249,32 @@ def gn(**kwds):
         if retcode != 0:
             msg("failed", color="red")
             sys.exit(retcode)
+
+        with open("out/cur/ninja", "w") as f:
+            f.write(
+                textwrap.dedent("""
+                    #!/bin/sh
+                    exec %s "$@"
+                """).lstrip() % ninja)
+        os.chmod("out/cur/ninja", 0o755)
+
+
+def _gn_dumps(obj):
+    if isinstance(obj, (str, int, float)):
+        return json.dumps(obj)
+    elif isinstance(obj, (tuple, list)):
+        return "[%s]" % ", ".join(_gn_dumps(x) for x in obj)
+    elif isinstance(obj, dict):
+        return "\n".join("%s = %s" % (k.replace("+", "x"), v) for k, v in _gn_obj_values(obj))
+    raise TypeError(type(obj).__name__)
+
+
+def _gn_obj_values(obj):
+    for k, v in obj.items():
+        if isinstance(v, (str, int, float, tuple, list)):
+            yield k, _gn_dumps(v)
+        elif isinstance(v, dict):
+            for k2, v2 in _gn_obj_values(v):
+                yield "%s_%s" % (k, k2), v2
+        else:
+            raise TypeError(type(obj).__name__)
