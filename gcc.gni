@@ -66,6 +66,7 @@ template("gcc_toolchain") {
     }
 
     ld = invoker.ld
+    extra_libs = invoker.extra_libs
     tool("link") {
       outfile = "{{root_out_dir}}/{{target_output_name}}{{output_extension}}"
       description = "LINK $outfile"
@@ -73,8 +74,7 @@ template("gcc_toolchain") {
       lib_switch = "-l"
       lib_dir_switch = "-L"
 
-      command =
-          "$ld {{ldflags}} -o $outfile {{inputs}} {{solibs}} {{libs}} -lpthread"
+      command = "$ld {{ldflags}} -o $outfile {{inputs}} {{solibs}} {{libs}} $extra_libs"
       outputs = [ outfile ]
     }
 

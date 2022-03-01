@@ -16,10 +16,12 @@ if (macosx_version_min != "") {
 }
 
 gcc_toolchain("mac") {
+  extra_libs = "-lrt"
   cc = clang + suffix
   cxx = clangxx + suffix
   objc = cc
   objcxx = cxx
   ld = cxx
   ar = "ar"
+  extra_libs = "-lpthread"
 }
