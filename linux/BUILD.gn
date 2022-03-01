@@ -32,5 +32,5 @@ gcc_toolchain("cross_win") {
   cxx = "clang++ -target x86_64-w64-mingw32 -static"
   ld = cxx
   ar = "x86_64-w64-mingw32-ar"
-  extra_libs = "-lpthread -lrt"
+  extra_libs = "-lpthread -lws2_32"
 }
