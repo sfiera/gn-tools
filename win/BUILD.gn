@@ -51,10 +51,12 @@ toolchain("msvc") {
 
 config("windows") {
   ldflags = [ "/SUBSYSTEM:WINDOWS" ]
+  defines = [ "WIN32_SUBSYSTEM_WINDOWS" ]
 }
 
 config("console") {
   ldflags = [ "/SUBSYSTEM:CONSOLE" ]
+  defines = [ "WIN32_SUBSYSTEM_CONSOLE" ]
 }
 
 config("cpp_exceptions") {
