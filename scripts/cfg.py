@@ -280,3 +280,130 @@ def _gn_obj_values(obj):
                 yield "%s_%s" % (k, k2), v2
         else:
             raise TypeError(type(obj).__name__)
+
+
+Distro = collections.namedtuple("Distro", "name packages sources install update add_key".split())
+
+
+def install_or_check(distros):
+    import argparse
+
+    if platform.system() == "Darwin":
+        distro, codename = "mac", None
+    elif platform.system() == "Linux":
+        _, distro, codename = dist_proto()
+    elif platform.system() == "Windows":
+        distro, codename = "win", None
+    else:
+        sys.stderr.write("This script is Mac-, Linux-, and Windows-only, sorry.\n")
+        sys.exit(1)
+
+    parser = argparse.ArgumentParser(description="Install build deps for Antares")
+    parser.add_argument("action", choices="check install".split())
+    parser.add_argument("--distro", choices=sorted(distros.keys()), default=distro)
+    parser.add_argument("--codename", type=str, default=codename)
+    parser.add_argument("--dry-run", action="store_const", const=True, default=False)
+    args, flags = parser.parse_known_args()
+
+    distro = distros[args.distro]
+    if args.action == "check":
+        if not check_all(distro=distro, codename=args.codename):
+            sys.exit(1)
+    elif args.action == "install":
+        install_all(distro=distro, codename=args.codename, dry_run=args.dry_run, flags=flags)
+
+
+def check_all(*, distro, codename, prefix=""):
+    checkers = {
+        "clang": check_clang,
+        "clang++": check_clangxx,
+        "gn": check_gn,
+        "ninja": check_ninja,
+        "pkg-config": check_pkg_config,
+    }
+
+    pkg_config = None
+    missing_pkgs = []
+    config = {}
+    for name in distro.packages:
+        if name in checkers:
+            dep = checkers[name]()
+            if dep is None:
+                missing_pkgs.append(name)
+            else:
+                config[name] = dep
+            continue
+
+        pkg_config = config.pop("pkg-config", pkg_config)
+        if pkg_config is None:
+            continue
+        if not check_pkg(pkg_config, name):
+            missing_pkgs.append(name)
+
+    if not missing_pkgs:
+        return config
+    commands = []
+
+    for name, url, component, key in distro.sources:
+        path = "/etc/apt/sources.list.d/%s.list" % name
+        if os.path.exists(path):
+            continue
+        commands.extend([
+            _command(prefix, distro.add_key + [key]),
+            "%s | %s" % (
+                _command("", ["echo", "deb", url, codename, component]),
+                _command(prefix, ["tee", path]),
+            ),
+        ])
+
+    if distro.update:
+        commands.append(_command(prefix, distro.update))
+    missing_pkgs = sorted(set(distro.packages[pkg] for pkg in missing_pkgs))
+    commands.append(_command(prefix, distro.install + missing_pkgs))
+
+    print()
+    print("missing dependencies: %s" % " ".join(missing_pkgs))
+    if len(missing_pkgs) == 1:
+        print("On %s, you can install it with:" % codename)
+    else:
+        print("On %s, you can install them with:" % codename)
+    print()
+    for command in commands:
+        print("    $ %s" % command)
+    print()
+    print("Then, try ./configure again")
+    return None
+
+
+def install_all(*, distro, codename, dry_run=False, flags=[]):
+    update = False
+    for name, url, component, key in distro.sources:
+        path = "/etc/apt/sources.list.d/%s.list" % name
+        if os.path.exists(path):
+            continue
+        _run(dry_run, distro.add_key + [key])
+        line = "deb %s %s %s" % (url, codename, component)
+        _write(dry_run, line, path)
+        update = True
+
+    if update:
+        _run(dry_run, distro.update)
+    _run(dry_run, distro.install + list(distro.packages.values()) + flags)
+
+
+def _command(prefix, args):
+    return " ".join(shlex.quote(x) for x in shlex.split(prefix) + args)
+
+
+def _run(dry_run, command):
+    print(" ".join(shlex.quote(arg) for arg in command))
+    if not dry_run:
+        subprocess.check_call(command)
+
+
+def _write(dry_run, content, path):
+    print("+ tee %s" % shlex.quote(path))
+    print(content)
+    if not dry_run:
+        with open(path, "w") as f:
+            f.write(content)
