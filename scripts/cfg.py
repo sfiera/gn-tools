@@ -132,11 +132,12 @@ def check_pkg(executable, lib):
     with step("checking for %s" % lib) as msg:
         try:
             for gn_name, (flag, prefix) in PKG_CONFIG_FLAGS.items():
-                values = subprocess.check_output(shlex.split(executable) + [flag, "--", lib])
+                values = subprocess.check_output(shlex.split(executable) + [flag, "--", lib],
+                                                 stderr=subprocess.DEVNULL)
                 values = values.decode("utf-8")
                 values = [_strip_prefix(prefix, x) for x in shlex.split(values)]
                 flags[gn_name] = values
-        except OSError:
+        except (OSError, subprocess.CalledProcessError):
             msg("missing", color="red")
             return None
     return flags
