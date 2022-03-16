@@ -35,11 +35,17 @@ config("libc++") {
 }
 
 config("dev") {
-  cflags = [ "-O0" ]
+  if (current_toolchain != "//build/lib/win:msvc") {
+    cflags = [ "-O0" ]
+  }
 }
 
 config("opt") {
-  cflags = [ "-Os" ]
+  if (current_toolchain == "//build/lib/win:msvc") {
+    cflags = [ "/Zo", "/O2", "/Oy-" ]
+  } else {
+    cflags = [ "-Os" ]
+  }
   defines = [ "NDEBUG" ]
 }
 
