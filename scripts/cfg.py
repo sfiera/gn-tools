@@ -407,3 +407,141 @@ def _write(dry_run, content, path):
     if not dry_run:
         with open(path, "w") as f:
             f.write(content)
+
+
+def configure(project, distros, config):
+    for k, v in check_deps(project, distros, config).items():
+        if k not in config:
+            config[k] = v
+
+    script_executable = "python3"
+    if host_os() == "win":
+        script_executable = "python"
+
+    with open('.gn', 'w') as gnf:
+        gnf.write('buildconfig = "//build/BUILDCONFIG.gn"\n')
+        gnf.write('script_executable = "' + script_executable + '"\n')
+
+    with step("configure mode") as msg:
+        msg(config["mode"], color="green")
+    gn(**config)
+
+    print("make(1) it so!")
+
+
+def check_deps(project, distros, config):
+    with step("checking host os") as msg:
+        if host_os() in ["mac", "linux", "win"]:
+            msg(host_os(), color="green")
+        else:
+            msg(host_os(), color="red")
+            print("\nSorry! %s requires Mac OS X, Linux, or Windows" % project)
+            sys.exit(1)
+
+    with step("checking target os") as msg:
+        if config["target_os"] is None:
+            config["target_os"] = host_os()
+        checker = {
+            ("mac", "mac"): check_mac,
+            ("linux", "linux"): check_linux_native,
+            ("linux", "win"): check_win_on_linux,
+            ("win", "win"): check_win_native,
+        }.get((host_os(), config["target_os"]))
+        if checker is None:
+            msg(config["target_os"], color="red")
+            sys.exit(1)
+        msg(config["target_os"], color="green")
+
+    return checker(project, distros)
+
+
+def check_mac(project, distros):
+    with step("checking Mac OS X version") as msg:
+        ver = platform.mac_ver()[0]
+        ver = tuple(int(x) for x in ver.split(".")[:2])
+        if ver < (10, 9):
+            msg("%d.%d" % ver, color="red")
+            print("\nSorry! %s requires Mac OS X 10.9+" % project)
+            sys.exit(1)
+        msg("%d.%d" % ver, color="green")
+
+    missing = collections.OrderedDict()
+    if not (check_clang() and check_libcxx()):
+        missing["xcode"] = ("* To install Xcode, open the App Store:\n"
+                            "    https://itunes.apple.com/en/app/xcode/id497799835\n"
+                            "  After installing, open it and accept the license agreement\n")
+    if not check_brew():
+        missing["brew"] = (
+            "* To install Homebrew, run:\n"
+            '    $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"\n'
+        )
+
+    if missing:
+        print("\nmissing dependencies: %s\n" % " ".join(missing.keys()))
+        for step in missing.values():
+            sys.stdout.write(step)
+        print("")
+        print("Then, try ./configure again")
+        sys.exit(1)
+
+    config = check_all(distro=distros["mac"], codename="mac")
+    if config is None:
+        sys.exit(1)
+    return config
+
+
+def check_linux_native(project, distros):
+    with step("checking Linux distro") as msg:
+        pretty, distro, codename = dist_proto()
+        if distro in distros:
+            msg(pretty, color="green")
+        else:
+            msg(pretty + " (untested)", color="yellow")
+            distro = "debian"
+    config = check_all(distro=distros[distro], codename=codename, prefix="sudo")
+    if config is None:
+        sys.exit(1)
+    return config
+
+
+def check_win_native(project, distros):
+    config = check_all(distro=distros["win"], codename="win")
+    if config is None:
+        sys.exit(1)
+    return config
+
+
+def check_win_on_linux(project):
+    with step("checking Linux distro") as msg:
+        pretty, distro, codename = dist_proto()
+        if (distro, codename) == ("debian", "focal"):
+            msg(pretty, color="green")
+        else:
+            msg(pretty, color="red")
+            print("\nSorry! Cross-compilation currently requires Ubuntu 20.04 focal")
+            sys.exit(1)
+
+    missing = collections.OrderedDict()
+    if not check_clang("clang++"):
+        missing["clang"] = "clang"
+
+    with step("checking for mingw") as msg:
+        if os.path.exists("/usr/x86_64-w64-mingw32/include/windows.h"):
+            msg("ok", color="green")
+        else:
+            msg("missing", color="red")
+            missing["mingw"] = "mingw-w64"
+
+    if missing:
+        print("\nmissing dependencies: %s" % " ".join(missing.keys()))
+        if len(missing) == 1:
+            print("\nYou can install it with:\n")
+        else:
+            print("\nYou can install them with:\n")
+        print("    $ sudo apt-get install %s" % (" ".join(missing.values())))
+        sys.exit(1)
+
+    return {
+        "ninja": "ninja",
+        "gn": "gn",
+    }
