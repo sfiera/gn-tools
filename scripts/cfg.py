@@ -478,8 +478,8 @@ def check_mac(project, distros):
 
     if missing:
         print("\nmissing dependencies: %s\n" % " ".join(missing.keys()))
-        for step in missing.values():
-            sys.stdout.write(step)
+        for dep in missing.values():
+            sys.stdout.write(dep)
         print("")
         print("Then, try ./configure again")
         sys.exit(1)
