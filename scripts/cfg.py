@@ -232,36 +232,35 @@ def makedirs(path):
 def gn(*, gn, ninja, **kwds):
     target_os = kwds["target_os"]
     mode = kwds["mode"]
-    out = os.path.join("out", target_os, mode)
+    build_dir = os.path.join("out", target_os, mode)
+    ninja_path = os.path.join(build_dir, "ninja")
+    cur_path = os.path.join("out", "cur")
+    cur_link = os.path.relpath(build_dir, os.path.dirname(cur_path))
 
     gn_args = _gn_dumps(kwds)
     cmd = shlex.split(gn) + [
         "gen",
         "--export-compile-commands",
         "-q",
-        out,
+        build_dir,
         "--args=%s" % gn_args,
     ]
     with step("generating build.ninja") as msg:
         try:
-            os.makedirs("out")
+            os.makedirs(os.path.dirname(cur_path))
         except OSError as e:
             if e.errno != 17:
                 raise
 
-        cur_path = os.path.join(target_os, mode)
-
+        try:
+            os.unlink(cur_path)
+        except OSError as e:
+            pass
         if host_os() == "win":
-            try:
-                os.mkdir(cur_path)
-            except OSError:
-                pass
+            with open(cur_path, "w") as f:
+                f.write(cur_link)
         else:
-            try:
-                os.unlink("out/cur")
-            except OSError as e:
-                pass
-            os.symlink(cur_path, "out/cur")
+            os.symlink(cur_link, cur_path)
 
         retcode = subprocess.call(cmd)
         if retcode != 0:
@@ -269,7 +268,7 @@ def gn(*, gn, ninja, **kwds):
             sys.exit(retcode)
 
         if host_os() != "win":
-            with open("out/cur/ninja", "w") as f:
+            with open(ninja_path, "w") as f:
                 f.write(
                     textwrap.dedent(
                         """
@@ -279,7 +278,7 @@ def gn(*, gn, ninja, **kwds):
                     ).lstrip()
                     % ninja
                 )
-            os.chmod("out/cur/ninja", 0o755)
+            os.chmod(ninja_path, 0o755)
 
 
 def _gn_dumps(obj):
