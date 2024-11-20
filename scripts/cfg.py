@@ -47,7 +47,7 @@ def tint(text, color):
 def step(message):
     sys.stdout.write(message + "...")
     sys.stdout.flush()
-    padding = ((27 - len(message)) * " ")
+    padding = (27 - len(message)) * " "
 
     def msg(failure, color=None):
         print(padding + tint(failure, color))
@@ -82,7 +82,7 @@ def _detect_dist_proto(lines):
         line = line.strip()
         if line:
             k, v = line.split("=", 1)
-            values[k], = shlex.split(v)
+            (values[k],) = shlex.split(v)
 
     pretty = values.get("PRETTY_NAME", "Unknown")
     codename = values.get("VERSION_CODENAME", "unknown")
@@ -105,10 +105,12 @@ def check_bin(executable, args, *, what, input=None):
             if not isinstance(input, bytes):
                 input = input.encode("utf-8")
         try:
-            p = subprocess.Popen(shlex.split(executable) + args,
-                                 stdin=stdin,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.STDOUT)
+            p = subprocess.Popen(
+                shlex.split(executable) + args,
+                stdin=stdin,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
             p.communicate(input)
             if p.returncode == 0:
                 return executable
@@ -132,8 +134,10 @@ def check_pkg(executable, lib):
     with step("checking for %s" % lib) as msg:
         try:
             for gn_name, (flag, prefix) in PKG_CONFIG_FLAGS.items():
-                values = subprocess.check_output(shlex.split(executable) + [flag, "--", lib],
-                                                 stderr=subprocess.DEVNULL)
+                values = subprocess.check_output(
+                    shlex.split(executable) + [flag, "--", lib],
+                    stderr=subprocess.DEVNULL,
+                )
                 values = values.decode("utf-8")
                 values = [_strip_prefix(prefix, x) for x in shlex.split(values)]
                 flags[gn_name] = values
@@ -145,7 +149,7 @@ def check_pkg(executable, lib):
 
 def _strip_prefix(prefix, s):
     if s.startswith(prefix):
-        return s[len(prefix):]
+        return s[len(prefix) :]
     return s
 
 
@@ -170,19 +174,23 @@ def check_ninja(default="ninja"):
 def check_clang(default="clang"):
     """Compile a basic C99 binary."""
     executable = os.getenv("CC", default)
-    return check_bin(executable,
-                     "-x c -std=c99 - -o /dev/null".split(),
-                     what="clang",
-                     input="int main() { return 1; }")
+    return check_bin(
+        executable,
+        "-x c -std=c99 - -o /dev/null".split(),
+        what="clang",
+        input="int main() { return 1; }",
+    )
 
 
 def check_clangxx(default="clang++"):
     """Compile a basic C++11 binary."""
     executable = os.getenv("CXX", default)
-    return check_bin(executable,
-                     "-x c++ -std=c++11 - -o /dev/null".split(),
-                     what="clang++",
-                     input="int main() { return 1; }")
+    return check_bin(
+        executable,
+        "-x c++ -std=c++11 - -o /dev/null".split(),
+        what="clang++",
+        input="int main() { return 1; }",
+    )
 
 
 def check_libcxx(default="clang++"):
@@ -192,16 +200,19 @@ def check_libcxx(default="clang++"):
         executable,
         "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
         what="libc++",
-        input="#include <chrono>\n\nint main() { return std::chrono::seconds(1).count(); }")
+        input="#include <chrono>\n\nint main() { return std::chrono::seconds(1).count(); }",
+    )
 
 
 def check_libcxxabi(default="clang++"):
     """Compile a basic C++11, libc++ binary, including cxxabi.h."""
     executable = os.getenv("CXX", default)
-    return check_bin(executable,
-                     "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
-                     what="libc++abi",
-                     input="#include <cxxabi.h>\n\nint main() { return 0; }")
+    return check_bin(
+        executable,
+        "-x c++ -std=c++11 -stdlib=libc++ - -o /dev/null".split(),
+        what="libc++abi",
+        input="#include <cxxabi.h>\n\nint main() { return 0; }",
+    )
 
 
 def check_pkg_config(default="pkg-config"):
@@ -224,7 +235,13 @@ def gn(*, gn, ninja, **kwds):
     out = os.path.join("out", target_os, mode)
 
     gn_args = _gn_dumps(kwds)
-    cmd = shlex.split(gn) + ["gen", "--export-compile-commands", "-q", out, "--args=%s" % gn_args]
+    cmd = shlex.split(gn) + [
+        "gen",
+        "--export-compile-commands",
+        "-q",
+        out,
+        "--args=%s" % gn_args,
+    ]
     with step("generating build.ninja") as msg:
         try:
             os.makedirs("out")
@@ -254,10 +271,14 @@ def gn(*, gn, ninja, **kwds):
         if host_os() != "win":
             with open("out/cur/ninja", "w") as f:
                 f.write(
-                    textwrap.dedent("""
+                    textwrap.dedent(
+                        """
                         #!/bin/sh
                         exec %s "$@"
-                    """).lstrip() % ninja)
+                        """
+                    ).lstrip()
+                    % ninja
+                )
             os.chmod("out/cur/ninja", 0o755)
 
 
@@ -267,7 +288,9 @@ def _gn_dumps(obj):
     elif isinstance(obj, (tuple, list)):
         return "[%s]" % ", ".join(_gn_dumps(x) for x in obj)
     elif isinstance(obj, dict):
-        return "\n".join("%s = %s" % (k.replace("+", "x"), v) for k, v in _gn_obj_values(obj))
+        return "\n".join(
+            "%s = %s" % (k.replace("+", "x"), v) for k, v in _gn_obj_values(obj)
+        )
     raise TypeError(type(obj).__name__)
 
 
@@ -282,7 +305,9 @@ def _gn_obj_values(obj):
             raise TypeError(type(obj).__name__)
 
 
-Distro = collections.namedtuple("Distro", "name packages sources install update add_key".split())
+Distro = collections.namedtuple(
+    "Distro", "name packages sources install update add_key".split()
+)
 
 
 def install_or_check(distros):
@@ -310,7 +335,9 @@ def install_or_check(distros):
         if not check_all(distro=distro, codename=args.codename):
             sys.exit(1)
     elif args.action == "install":
-        install_all(distro=distro, codename=args.codename, dry_run=args.dry_run, flags=flags)
+        install_all(
+            distro=distro, codename=args.codename, dry_run=args.dry_run, flags=flags
+        )
 
 
 def check_all(*, distro, codename, prefix=""):
@@ -348,13 +375,16 @@ def check_all(*, distro, codename, prefix=""):
         path = "/etc/apt/sources.list.d/%s.list" % name
         if os.path.exists(path):
             continue
-        commands.extend([
-            _command(prefix, distro.add_key + [key]),
-            "%s | %s" % (
-                _command("", ["echo", "deb", url, codename, component]),
-                _command(prefix, ["tee", path]),
-            ),
-        ])
+        commands.extend(
+            [
+                _command(prefix, distro.add_key + [key]),
+                "%s | %s"
+                % (
+                    _command("", ["echo", "deb", url, codename, component]),
+                    _command(prefix, ["tee", path]),
+                ),
+            ]
+        )
 
     if distro.update:
         commands.append(_command(prefix, distro.update))
@@ -418,7 +448,7 @@ def configure(project, distros, config):
     if host_os() == "win":
         script_executable = "python"
 
-    with open('.gn', 'w') as gnf:
+    with open(".gn", "w") as gnf:
         gnf.write('buildconfig = "//build/BUILDCONFIG.gn"\n')
         gnf.write('script_executable = "' + script_executable + '"\n')
 
@@ -467,9 +497,11 @@ def check_mac(project, distros):
 
     missing = collections.OrderedDict()
     if not (check_clang() and check_libcxx()):
-        missing["xcode"] = ("* To install Xcode, open the App Store:\n"
-                            "    https://itunes.apple.com/en/app/xcode/id497799835\n"
-                            "  After installing, open it and accept the license agreement\n")
+        missing["xcode"] = (
+            "* To install Xcode, open the App Store:\n"
+            "    https://itunes.apple.com/en/app/xcode/id497799835\n"
+            "  After installing, open it and accept the license agreement\n"
+        )
     if not check_brew():
         missing["brew"] = (
             "* To install Homebrew, run:\n"

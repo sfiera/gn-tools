@@ -30,7 +30,7 @@ def main():
 
 def strip_prefix(prefix, s):
     if s.startswith(prefix):
-        return s[len(prefix):]
+        return s[len(prefix) :]
     return s
 
 

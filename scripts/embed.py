@@ -33,7 +33,7 @@ def main():
         f.write("\n")
         f.write("extern const char %s[] =\n" % symbol[-1])
         for line in data:
-            f.write("    \"%s\"\n" % escape(line))
+            f.write('    "%s"\n' % escape(line))
         f.write(";\n")
         f.write("\n")
         for namespace in symbol[-2::-1]:

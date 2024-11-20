@@ -21,7 +21,9 @@ ID_LIKE=debian
 HOME_URL="http://www.raspbian.org/"
 SUPPORT_URL="http://www.raspbian.org/RaspbianForums"
 BUG_REPORT_URL="http://www.raspbian.org/RaspbianBugs"
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 XENIAL = """
 NAME="Ubuntu"
@@ -35,7 +37,9 @@ SUPPORT_URL="http://help.ubuntu.com/"
 BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
 VERSION_CODENAME=xenial
 UBUNTU_CODENAME=xenial
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 SID = """
 PRETTY_NAME="Debian GNU/Linux bullseye/sid"
@@ -44,7 +48,9 @@ ID=debian
 HOME_URL="https://www.debian.org/"
 SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 CENTOS = """
 NAME="CentOS Linux"
@@ -63,7 +69,9 @@ CENTOS_MANTISBT_PROJECT="CentOS-8"
 CENTOS_MANTISBT_PROJECT_VERSION="8"
 REDHAT_SUPPORT_PRODUCT="centos"
 REDHAT_SUPPORT_PRODUCT_VERSION="8"
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 ARCHLINUX = """
 NAME="Arch Linux"
@@ -76,7 +84,9 @@ DOCUMENTATION_URL="https://wiki.archlinux.org/"
 SUPPORT_URL="https://bbs.archlinux.org/"
 BUG_REPORT_URL="https://bugs.archlinux.org/"
 LOGO=archlinux
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 ALPINE = """
 NAME="Alpine Linux"
@@ -85,20 +95,28 @@ VERSION_ID=3.12.0
 PRETTY_NAME="Alpine Linux v3.12"
 HOME_URL="https://alpinelinux.org/"
 BUG_REPORT_URL="https://bugs.alpinelinux.org/"
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 UNKNOWN = """
 PRETTY_NAME="Crazy Other Linux"
 ID=crazy
-""".strip().split("\n")
+""".strip().split(
+    "\n"
+)
 
 
 def test_rasbpian_proto():
     detect = cfg._detect_dist_proto
 
-    assert detect(RASPBIAN) == cfg.proto("Raspbian GNU/Linux 10 (buster)", "debian", "buster")
+    assert detect(RASPBIAN) == cfg.proto(
+        "Raspbian GNU/Linux 10 (buster)", "debian", "buster"
+    )
     assert detect(XENIAL) == cfg.proto("Ubuntu 16.04.6 LTS", "debian", "xenial")
-    assert detect(SID) == cfg.proto("Debian GNU/Linux bullseye/sid", "debian", "unknown")
+    assert detect(SID) == cfg.proto(
+        "Debian GNU/Linux bullseye/sid", "debian", "unknown"
+    )
     assert detect(CENTOS) == cfg.proto("CentOS Linux 8 (Core)", "fedora", "unknown")
     assert detect(ARCHLINUX) == cfg.proto("Arch Linux", "arch", "unknown")
     assert detect(ALPINE) == cfg.proto("Alpine Linux v3.12", "alpine", "unknown")
